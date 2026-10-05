@@ -9,7 +9,6 @@ from .tensor_functions import Function, rand, tensor, tensor_from_numpy
 import numpy as np
 import math
 
-
 def tile(input: Tensor, kernel: Tuple[int, int]) -> Tuple[Tensor, int, int]:
     """
     Reshape an image tensor for 2D pooling
@@ -26,7 +25,6 @@ def tile(input: Tensor, kernel: Tuple[int, int]) -> Tuple[Tensor, int, int]:
     kh, kw = kernel
     assert height % kh == 0
     assert width % kw == 0
-
     new_width = width // kw
     new_height = height // kh
 
@@ -48,7 +46,6 @@ def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
         Pooled tensor
     """
     batch, channel, height, width = input.shape
-
     x, new_height, new_width = tile(input, kernel)
     return x.mean(dim=4).view(batch, channel, new_height, new_width)
 
@@ -81,7 +78,6 @@ class Max(Function):
     @staticmethod
     def forward(ctx: Context, input: Tensor, dim: Tensor) -> Tensor:
         "Forward of max should be max reduction"
-        # ASSIGN4.4
         out = max_reduce(input, int(dim.item()))
         ctx.save_for_backward(input, out)
         return out
@@ -89,7 +85,6 @@ class Max(Function):
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         "Backward of max should be argmax (see above)"
-        # ASSIGN4.4
         input, out = ctx.saved_values
         return (out == input) * grad_output, 0.0
 
@@ -101,8 +96,6 @@ def max(input: Tensor, dim: int) -> Tensor:
 def softmax(input: Tensor, dim: int) -> Tensor:
     r"""
     Compute the softmax as a tensor.
-
-
 
     $z_i = \frac{e^{x_i}}{\sum_i e^{x_i}}$
 
@@ -185,10 +178,6 @@ def layer_norm(input: Tensor, eps: float = 1e-5) -> Tensor:
     return input_normalized
 
 
-###############################################################################
-# Assignment 3 Problem 1
-###############################################################################
-
 def GELU(input: Tensor) -> Tensor: 
     """Applies the GELU activation function with 'tanh' approximation element-wise
     https://pytorch.org/docs/stable/generated/torch.nn.GELU.html
@@ -221,8 +210,10 @@ def logsumexp(input: Tensor, dim: int) -> Tensor:
         out : The output tensor with the same number of dimensions as input (equiv. to keepdims=True)
             NOTE: minitorch functions/tensor functions typically keep dimensions if you provide a dimensions.
     """  
-    # COPY FROM ASSIGN3_1
-    raise NotImplementedError
+    ### BEGIN ASSIGN3_1
+    mx = max(input, dim)
+    return (input - mx).exp().sum(dim=dim).log() + mx
+    ### END ASSIGN3_1
 
 
 def softmax_loss(logits: Tensor, target: Tensor) -> Tensor:
@@ -236,5 +227,11 @@ def softmax_loss(logits: Tensor, target: Tensor) -> Tensor:
     Returns: 
         loss : (minibatch, )
     """
-    # COPY FROM ASSIGN3_1
-    raise NotImplementedError
+    ### BEGIN ASSIGN3_1
+    batch_size, num_classes = logits.shape
+    target_one_hot = one_hot(target, num_classes)
+
+    loss = logsumexp(logits, dim=1) - (logits * target_one_hot).sum(dim=1)
+
+    return loss.view(batch_size)
+    ### END ASSIGN3_1

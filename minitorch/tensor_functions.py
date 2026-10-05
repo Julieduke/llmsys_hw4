@@ -384,13 +384,23 @@ class Attn_Softmax(Function):
     @staticmethod
     def forward(ctx: Context, inp: Tensor, mask: Tensor) -> Tensor:
       #   BEGIN ASSIGN4_1_1
-      raise NotImplementedError("Need to implement for Assignment 4")
+      out = inp.contiguous()
+      out = out.backend.attn_softmax_fw(out, mask)
+      ctx.save_for_backward(out, mask)
+      return out
       #   END ASSIGN4_1_1
 
     @staticmethod
     def backward(ctx: Context, out_grad: Tensor) -> Tensor:
       #   BEGIN ASSIGN4_1_2
-      raise NotImplementedError("Need to implement for Assignment 4")
+      soft_inp, mask = ctx.saved_values
+
+      grad_inp = out_grad.contiguous()
+      grad_inp = grad_inp.backend.attn_softmax_bw(grad_inp, soft_inp)
+
+      grad_mask = mask * 0.0
+
+      return grad_inp, grad_mask
       #   END ASSIGN4_1_2
 
 
@@ -398,13 +408,29 @@ class LayerNorm(Function):
     @staticmethod
     def forward(ctx: Context, inp: Tensor, gamma: Tensor, beta: Tensor) -> Tensor:
       #   BEGIN ASSIGN4_2_1
-      raise NotImplementedError("Need to implement for Assignment 4")
+      x = inp.contiguous()
+      gamma = gamma.contiguous()
+      beta = beta.contiguous()
+
+      out, var, mean = x.backend.layernorm_fw(x, gamma, beta)
+
+      ctx.save_for_backward(x, gamma, beta, var, mean)
+
+      return out
       #   END ASSIGN4_2_1
 
     @staticmethod
     def backward(ctx: Context, out_grad: Tensor) -> Tensor:
       #   BEGIN ASSIGN4_2_2
-      raise NotImplementedError("Need to implement for Assignment 4")
+      inp, gamma, beta, var, mean = ctx.saved_values
+
+      grad = out_grad.contiguous()
+
+      inp_grad, gamma_grad, beta_grad = grad.backend.layernorm_bw(
+          grad, inp, gamma, beta, var, mean
+      )
+
+      return inp_grad, gamma_grad, beta_grad
       #   END ASSIGN4_2_2
 
 
